@@ -1,0 +1,166 @@
+<!DOCTYPE html><html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catch the Falling Balls</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        canvas {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .control-button {
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            user-select: none;
+        }
+        .control-button:active {
+            background: #45a049;
+        }
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Catch the Falling Balls</h1>
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+    <div class="score" id="scoreDisplay">Score: 0 | Level: 1 | Lives: 3 | Coins: 0</div>
+    <div class="controls">
+        <button class="control-button" id="leftBtn">⬅ Left</button>
+        <button class="control-button" id="rightBtn">Right ➡</button>
+        <button class="control-button" id="restartBtn">🔄 Restart</button>
+    </div><audio id="catchSound" src="sounds/catch.mp3"></audio>
+<audio id="missSound" src="sounds/miss.mp3"></audio>
+<audio id="gameOverSound" src="sounds/gameover.mp3"></audio>
+<audio id="levelUpSound" src="sounds/levelup.mp3"></audio>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const leftBtn = document.getElementById("leftBtn");
+    const rightBtn = document.getElementById("rightBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const scoreDisplay = document.getElementById("scoreDisplay");
+    const catchSound = document.getElementById("catchSound");
+    const missSound = document.getElementById("missSound");
+    const gameOverSound = document.getElementById("gameOverSound");
+    const levelUpSound = document.getElementById("levelUpSound");
+    
+    let player, balls, score, gameOver, moveLeft, moveRight, level, ballSpeed, lives, coins = 0;
+
+    function initializeGame() {
+        player = { x: 165, y: 450, width: 70, height: 15, speed: 5 };
+        balls = [];
+        score = 0;
+        level = 1;
+        ballSpeed = 2.5;
+        lives = 3;
+        gameOver = false;
+        moveLeft = false;
+        moveRight = false;
+        scoreDisplay.innerText = `Score: ${score} | Level: ${level} | Lives: ${lives} | Coins: ${coins}`;
+        updateGame();
+    }
+
+    function createBall() {
+        if (!gameOver) {
+            let x = Math.random() * (canvas.width - 20) + 10;
+            balls.push({ x: x, y: 0, radius: 12, speed: ballSpeed });
+        }
+    }
+
+    function updateGame() {
+        if (gameOver) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#3498db";
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+        
+        if (moveLeft && player.x > 0) {
+            player.x -= player.speed;
+        }
+        if (moveRight && player.x + player.width < canvas.width) {
+            player.x += player.speed;
+        }
+        
+        balls.forEach((ball, index) => {
+            ball.y += ball.speed;
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = "#e74c3c";
+            ctx.fill();
+            ctx.closePath();
+
+            if (
+                ball.y + ball.radius >= player.y &&
+                ball.x >= player.x &&
+                ball.x <= player.x + player.width
+            ) {
+                balls.splice(index, 1);
+                score += 10;
+                catchSound.play();
+                if (score % 50 === 0) {
+                    level++;
+                    ballSpeed += 0.5;
+                    levelUpSound.play();
+                }
+            } else if (ball.y > canvas.height) {
+                balls.splice(index, 1);
+                lives--;
+                missSound.play();
+                if (lives <= 0) {
+                    gameOver = true;
+                    gameOverSound.play();
+                    alert("Game Over!");
+                }
+            }
+        });
+        
+        scoreDisplay.innerText = `Score: ${score} | Level: ${level} | Lives: ${lives} | Coins: ${coins}`;
+        if (!gameOver) {
+            requestAnimationFrame(updateGame);
+        }
+    }
+
+    leftBtn.addEventListener("touchstart", () => moveLeft = true);
+    leftBtn.addEventListener("touchend", () => moveLeft = false);
+    rightBtn.addEventListener("touchstart", () => moveRight = true);
+    rightBtn.addEventListener("touchend", () => moveRight = false);
+
+    leftBtn.addEventListener("mousedown", () => moveLeft = true);
+    leftBtn.addEventListener("mouseup", () => moveLeft = false);
+    rightBtn.addEventListener("mousedown", () => moveRight = true);
+    rightBtn.addEventListener("mouseup", () => moveRight = false);
+
+    restartBtn.addEventListener("click", initializeGame);
+    setInterval(createBall, 1000);
+    initializeGame();
+</script>
+
+</body>
+</html>
